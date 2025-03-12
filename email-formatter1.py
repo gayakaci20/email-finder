@@ -4,18 +4,19 @@ from email_validator import validate_email, EmailNotValidError
 
 def format_email_addresses(names, domain, style):
     """
-    Formate les adresses email selon le style spécifié.
+    Formats email addresses according to the specified style.
     """
     emails = []
     for name in names:
         parts = name.strip().lower().split()
         if len(parts) < 2:
-            # Si un seul mot, on le considère comme prénom
+            # If only one word, consider it as first name
             firstname = parts[0]
             lastname = ""
         else:
-            firstname = parts[0]
-            lastname = parts[-1]  # Prend le dernier mot comme nom de famille
+            # Handle multi-word names
+            firstname = '-'.join(parts[:-1])  # Join all words except last with hyphens
+            lastname = parts[-1]  # Takes the last word as last name
         
         email = ""
         if style == 'firstname.lastname':
@@ -35,7 +36,7 @@ def format_email_addresses(names, domain, style):
         elif style == 'initials':
             email = f"{firstname[0]}{lastname[0]}@{domain}"
         
-        # Nettoyer l'email (enlever les caractères spéciaux)
+        # Clean the email (remove special characters)
         email = re.sub(r'[^a-z0-9.@]', '', email)
         emails.append(email)
     
@@ -43,7 +44,7 @@ def format_email_addresses(names, domain, style):
 
 def format_email_all_styles(names, domain):
     """
-    Génère toutes les variantes d'adresses email pour chaque nom.
+    Generates all email address variants for each name.
     """
     styles = {
         'firstname.lastname': [],
@@ -63,7 +64,7 @@ def format_email_all_styles(names, domain):
 
 def test_email_delivery(email):
     """
-    Simule un test d'envoi d'email.
+    Simulates an email delivery test.
     """
     try:
         validation = validate_email(email, check_deliverability=True)
@@ -73,7 +74,7 @@ def test_email_delivery(email):
 
 def identify_valid_email(names, domain):
     """
-    Identifie la meilleure adresse email valide parmi les formats générés.
+    Identifies the best valid email address among the generated formats.
     """
     all_formats = format_email_all_styles(names, domain)
     valid_emails = {}
@@ -83,38 +84,38 @@ def identify_valid_email(names, domain):
             email = emails[i]
             if test_email_delivery(email):
                 valid_emails[name] = email
-                break  # Prend la première adresse valide trouvée
+                break  # Takes the first valid address found
     
     return valid_emails
 
 def format_emails_from_input():
     """
-    Fonction interactive pour formater et tester des adresses email.
+    Interactive function to format and test email addresses.
     """
     print("Email Address Formatter & Validator")
     print("===================================")
     
-    names_input = input("Entrez les noms (un par ligne, appuyez deux fois sur Entrée pour terminer) :\n")
+    names_input = input("Enter names (one per line, press Enter twice to finish):\n")
     names = []
     while names_input:
         names.append(names_input)
         names_input = input()
     
-    domain = input("Entrez le domaine email (ex. company.com) : ")
+    domain = input("Enter email domain (e.g. company.com): ")
     
-    print("\nChoisissez le format d'email :")
-    print("1. firstname.lastname (ex: john.doe)")
-    print("2. f.lastname (ex: j.doe)")
-    print("3. firstname.l (ex: john.d)")
-    print("4. firstnamelastname (ex: johndoe)")
-    print("5. flastname (ex: jdoe)")
-    print("6. lastname.firstname (ex: doe.john)")
-    print("7. l.firstname (ex: d.john)")
-    print("8. initials (ex: jd)")
-    print("9. Tester toutes les options et identifier la bonne adresse")
-    print("10. Afficher toutes les options sans test de validité")
+    print("\nChoose email format:")
+    print("1. firstname.lastname (e.g.: john.doe)")
+    print("2. f.lastname (e.g.: j.doe)")
+    print("3. firstname.l (e.g.: john.d)")
+    print("4. firstnamelastname (e.g.: johndoe)")
+    print("5. flastname (e.g.: jdoe)")
+    print("6. lastname.firstname (e.g.: doe.john)")
+    print("7. l.firstname (e.g.: d.john)")
+    print("8. initials (e.g.: jd)")
+    print("9. Test all options and identify the correct address")
+    print("10. Display all options without validity testing")
     
-    format_choice = input("Entrez votre choix (1-10) : ")
+    format_choice = input("Enter your choice (1-10): ")
     format_options = {
         '1': 'firstname.lastname',
         '2': 'f.lastname',
@@ -126,24 +127,43 @@ def format_emails_from_input():
         '8': 'initials'
     }
     
+    emails_list = []
+    
     if format_choice == '9':
         valid_emails = identify_valid_email(names, domain)
-        print("\nAdresses email valides identifiées :")
+        print("\nIdentified valid email addresses:")
         for name, email in valid_emails.items():
             print(f"{name}: {email}")
+            emails_list.append(email)
     elif format_choice == '10':
         all_formats = format_email_all_styles(names, domain)
-        print("\nToutes les adresses email possibles (sans test de validité) :")
+        print("\nAll possible email addresses (without validity testing):")
         for i, name in enumerate(names):
-            print(f"\nPour {name}:")
+            print(f"\nFor {name}:")
             for style, emails in all_formats.items():
                 print(f"{style}: {emails[i]}")
+                emails_list.append(emails[i])
     else:
         email_format = format_options.get(format_choice, 'firstname.lastname')
         formatted_emails = format_email_addresses(names, domain, email_format)
-        print("\nAdresses email formatées :")
+        print("\nFormatted email addresses:")
         for email in formatted_emails:
             print(email)
+            emails_list.append(email)
+    
+    # Add option to copy emails
+    if emails_list:
+        copy_choice = input("\nWould you like to copy all emails to clipboard? (y/n): ")
+        if copy_choice.lower() == 'y':
+            try:
+                import pyperclip
+                email_text = '\n'.join(emails_list)
+                pyperclip.copy(email_text)
+                print("Emails copied to clipboard successfully!")
+            except ImportError:
+                print("pyperclip module not found. Please install it using: pip install pyperclip")
+            except Exception as e:
+                print(f"Failed to copy to clipboard: {str(e)}")
 
 if __name__ == "__main__":
     format_emails_from_input()
