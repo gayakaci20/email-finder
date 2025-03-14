@@ -64,12 +64,22 @@ def format_email_all_styles(names, domain):
 
 def test_email_delivery(email):
     """
-    Simulates an email delivery test.
+    Tests email deliverability using Abstract API.
     """
+    import requests
+
+    api_key = 'API KEY HERE --------->>>>>>  # Replace with your API key'
+    api_url = f'https://emailvalidation.abstractapi.com/v1/?api_key={api_key}&email={email}'
+
     try:
-        validation = validate_email(email, check_deliverability=True)
-        return validation.email
-    except EmailNotValidError:
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            data = response.json()
+            # Check if the email is deliverable and has valid format
+            if data.get('deliverability') == 'DELIVERABLE' and data.get('is_valid_format').get('value'):
+                return email
+        return None
+    except Exception:
         return None
 
 def identify_valid_email(names, domain):

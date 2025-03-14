@@ -67,29 +67,49 @@ def format_email_all_styles(names, domain):
 
 def test_email_delivery(email):
     """
-    Simulates an email delivery test.
+    Tests email deliverability using Abstract API.
     """
+    import requests
+    import time
+
+    api_key = 'API KEY HERE --------->>>>>>  # Replace with your API key'       
+    api_url = f'https://emailvalidation.abstractapi.com/v1/?api_key={api_key}&email={email}'
+
     try:
-        validation = validate_email(email, check_deliverability=True)
-        return validation.email
-    except EmailNotValidError:
+        # Add delay to respect API rate limits
+        time.sleep(1)
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            data = response.json()
+            # Check if the email is deliverable and has valid format
+            if data.get('deliverability') == 'DELIVERABLE' and data.get('is_valid_format').get('value'):
+                return email
+            elif response.status_code == 429:  # Rate limit exceeded
+                time.sleep(60)  # Wait for 60 seconds before retrying
+                return test_email_delivery(email)  # Retry the request
+        return None
+    except Exception as e:
+        print(f"Error testing email {email}: {str(e)}")
         return None
 
 def identify_valid_email(names, domain):
     """
-    Identifies the best valid email address among generated formats.
+    Tests all possible email formats and returns validation results.
     """
     all_formats = format_email_all_styles(names, domain)
-    valid_emails = {}
+    validation_results = {}
     
     for i, name in enumerate(names):
+        validation_results[name] = {}
         for style, emails in all_formats.items():
             email = emails[i]
-            if test_email_delivery(email):
-                valid_emails[name] = email
-                break  # Takes the first valid address found
+            is_valid = test_email_delivery(email)
+            validation_results[name][style] = {
+                'email': email,
+                'is_valid': bool(is_valid)
+            }
     
-    return valid_emails
+    return validation_results
 
 class EmailFormatterApp:
     def __init__(self, root):
@@ -228,14 +248,17 @@ class EmailFormatterApp:
         
         try:
             if format_choice == '9':
-                self.result_text.insert(tk.END, "Searching for valid email addresses...\n\n")
-                valid_emails = identify_valid_email(names, domain)
-                self.result_text.insert(tk.END, "Identified valid email addresses:\n")
-                for name, email in valid_emails.items():
-                    self.result_text.insert(tk.END, f"{name}: {email}\n")
-                    
-                if not valid_emails:
-                    self.result_text.insert(tk.END, "No valid email address found.\n")
+                self.result_text.insert(tk.END, "Testing all possible email formats...\n\n")
+                emails_list = []
+                validation_results = identify_valid_email(names, domain)
+                self.result_text.insert(tk.END, "All possible email addresses with validation results:\n")
+                for name, formats in validation_results.items():
+                    self.result_text.insert(tk.END, f"\nFor {name}:\n")
+                    for style, result in formats.items():
+                        status = "✓ Valid" if result['is_valid'] else "✗ Invalid"
+                        self.result_text.insert(tk.END, f"{style}: {result['email']} [{status}]\n")
+                        if result['is_valid']:
+                            emails_list.append(result['email'])
                     
             elif format_choice == '10':
                 all_formats = format_email_all_styles(names, domain)
