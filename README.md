@@ -81,6 +81,19 @@ The GUI provides a user-friendly interface with the **same features** as the CLI
 ✔️ **Domain validity**  
 ✔️ **Deliverability** (if validation option is enabled)  
 
+### **🔑 API Key Setup**  
+
+1️⃣ **Get an Abstract API key:**  
+   - Sign up at [Abstract API](https://www.abstractapi.com)  
+   - Navigate to Email Validation API  
+   - Copy your API key  
+
+2️⃣ **Add your API key:**  
+   - Locate `API KEY HERE --------->>>>>>` in both `email-formatter1.py` and `email_formatter_gui.py`  
+   - Replace it with your Abstract API key  
+
+⚠️ **Note:** The free tier has rate limits. The tool will automatically handle rate limiting by adding delays between requests.  
+
 ---
 
 ## **🛠️ Special Features**  
