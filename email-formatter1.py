@@ -68,7 +68,7 @@ def test_email_delivery(email):
     """
     import requests
 
-    api_key = 'API KEY HERE --------->>>>>>  # Replace with your API key'
+    api_key = 'API KEY HERE --------->>>>>>'                       # Replace with your API key
     api_url = f'https://emailvalidation.abstractapi.com/v1/?api_key={api_key}&email={email}'
 
     try:
