@@ -18,8 +18,10 @@ def format_email_addresses(names, domain, style):
             firstname = parts[0]
             lastname = ""
         else:
-            firstname = parts[0]
+            # Handle compound first names and last name
             lastname = parts[-1]  # Take the last word as lastname
+            firstname_parts = parts[:-1]  # All words except the last one are part of the firstname
+            firstname = '-'.join(firstname_parts)  # Join firstname parts with hyphens
         
         email = ""
         if style == 'firstname.lastname':
@@ -72,7 +74,7 @@ def test_email_delivery(email):
     import requests
     import time
 
-    api_key = 'API KEY HERE --------->>>>>>  # Replace with your API key'       
+    api_key = 'API KEY HERE --------->>>>>>'                    # Replace with your API key
     api_url = f'https://emailvalidation.abstractapi.com/v1/?api_key={api_key}&email={email}'
 
     try:
@@ -166,7 +168,8 @@ class EmailFormatterApp:
             ("7. l.firstname (ex: d.john)", "7"),
             ("8. initials (ex: jd)", "8"),
             ("9. Test all options and identify the correct address", "9"),
-            ("10. Show all options without validity test", "10")
+            ("10. Show all options without validity test", "10"),
+            ("11. Validate emails using regex (offline validation)", "11")
         ]
         
         for i, (text, value) in enumerate(formats):
@@ -267,6 +270,19 @@ class EmailFormatterApp:
                     self.result_text.insert(tk.END, f"\nFor {name}:\n")
                     for style, emails in all_formats.items():
                         self.result_text.insert(tk.END, f"{style}: {emails[i]}\n")
+            elif format_choice == '11':
+                all_formats = format_email_all_styles(names, domain)
+                self.result_text.insert(tk.END, "Validating all possible email formats using regex:\n")
+                for i, name in enumerate(names):
+                    self.result_text.insert(tk.END, f"\nFor {name}:\n")
+                    for style, emails in all_formats.items():
+                        email = emails[i]
+                        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+                        is_valid = bool(re.match(pattern, email) and
+                                      len(email) <= 254 and
+                                      len(email.split('@')[0]) <= 64)
+                        status = "✓ Valid" if is_valid else "✗ Invalid"
+                        self.result_text.insert(tk.END, f"{style}: {email} - {status}\n")
             else:
                 email_format = format_options.get(format_choice, 'firstname.lastname')
                 formatted_emails = format_email_addresses(names, domain, email_format)

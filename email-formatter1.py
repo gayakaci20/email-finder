@@ -14,9 +14,10 @@ def format_email_addresses(names, domain, style):
             firstname = parts[0]
             lastname = ""
         else:
-            # Handle multi-word names
-            firstname = '-'.join(parts[:-1])  # Join all words except last with hyphens
-            lastname = parts[-1]  # Takes the last word as last name
+            # Handle compound first names and last name
+            lastname = parts[-1]  # Take the last word as lastname
+            firstname_parts = parts[:-1]  # All words except the last one are part of the firstname
+            firstname = '-'.join(firstname_parts)  # Join firstname parts with hyphens
         
         email = ""
         if style == 'firstname.lastname':
@@ -98,6 +99,20 @@ def identify_valid_email(names, domain):
     
     return valid_emails
 
+def validate_email_regex(email):
+    """
+    Validates email address using regex pattern.
+    Returns True if email is valid, False otherwise.
+    """
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    if re.match(pattern, email):
+        # Additional checks
+        if len(email) <= 254:  # Maximum length check
+            local_part = email.split('@')[0]
+            if len(local_part) <= 64:  # Local part length check
+                return True
+    return False
+
 def format_emails_from_input():
     """
     Interactive function to format and test email addresses.
@@ -124,8 +139,9 @@ def format_emails_from_input():
     print("8. initials (e.g.: jd)")
     print("9. Test all options and identify the correct address")
     print("10. Display all options without validity testing")
+    print("11. Validate emails using regex (offline validation)")
     
-    format_choice = input("Enter your choice (1-10): ")
+    format_choice = input("Enter your choice (1-11): ")
     format_options = {
         '1': 'firstname.lastname',
         '2': 'f.lastname',
@@ -153,6 +169,18 @@ def format_emails_from_input():
             for style, emails in all_formats.items():
                 print(f"{style}: {emails[i]}")
                 emails_list.append(emails[i])
+    elif format_choice == '11':
+        all_formats = format_email_all_styles(names, domain)
+        print("\nValidating all possible email formats using regex:")
+        for i, name in enumerate(names):
+            print(f"\nFor {name}:")
+            for style, emails in all_formats.items():
+                email = emails[i]
+                is_valid = validate_email_regex(email)
+                status = "✓ Valid" if is_valid else "✗ Invalid"
+                print(f"{style}: {email} - {status}")
+                if is_valid:
+                    emails_list.append(email)
     else:
         email_format = format_options.get(format_choice, 'firstname.lastname')
         formatted_emails = format_email_addresses(names, domain, email_format)
