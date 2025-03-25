@@ -41,8 +41,13 @@ def format_email_addresses(names, domain, style):
         elif style == 'initials':
             email = f"{firstname[0]}{lastname[0]}@{domain}"
         
-        # Clean email (remove special characters)
-        email = re.sub(r'[^a-z0-9.@]', '', email)
+        # Clean email (preserve hyphens, remove other special characters)
+        email = re.sub(r'[^a-z0-9.@-]', '', email)
+        # Remove consecutive hyphens and ensure hyphens aren't at start/end of parts
+        parts = email.split('@')
+        local_part = re.sub(r'-+', '-', parts[0]).strip('-')
+        domain = re.sub(r'-+', '-', parts[1]).strip('-')
+        email = f"{local_part}@{domain}"
         emails.append(email)
     
     return emails
@@ -218,6 +223,9 @@ class EmailFormatterApp:
             self.status_var.set("No emails found to copy")
     
     def process_emails(self):
+        # Allow hyphens in domain name but not at start or end
+        # Allow hyphens in domain name but not at start or end
+        pattern = r'^[a-zA-Z0-9._%+-]+@(?!-)[a-zA-Z0-9-]+(?<!-)(\.[a-zA-Z0-9-]+(?<!-))*\.[a-zA-Z]{2,}$'
         # Clear previous results
         self.result_text.delete(1.0, tk.END)
         

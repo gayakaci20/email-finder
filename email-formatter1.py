@@ -37,8 +37,13 @@ def format_email_addresses(names, domain, style):
         elif style == 'initials':
             email = f"{firstname[0]}{lastname[0]}@{domain}"
         
-        # Clean the email (remove special characters)
-        email = re.sub(r'[^a-z0-9.@]', '', email)
+        # Clean the email (preserve hyphens, remove other special characters)
+        email = re.sub(r'[^a-z0-9.@-]', '', email)
+        # Remove consecutive hyphens and ensure hyphens aren't at start/end of parts
+        parts = email.split('@')
+        local_part = re.sub(r'-+', '-', parts[0]).strip('-')
+        domain = re.sub(r'-+', '-', parts[1]).strip('-')
+        email = f"{local_part}@{domain}"
         emails.append(email)
     
     return emails
@@ -104,13 +109,16 @@ def validate_email_regex(email):
     Validates email address using regex pattern.
     Returns True if email is valid, False otherwise.
     """
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    # Allow hyphens in both local part and domain, but not at start/end of parts
+    pattern = r'^[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]@(?!-)[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9](\.[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9])*\.[a-zA-Z]{2,}$'
     if re.match(pattern, email):
         # Additional checks
         if len(email) <= 254:  # Maximum length check
             local_part = email.split('@')[0]
             if len(local_part) <= 64:  # Local part length check
-                return True
+                # Ensure no consecutive hyphens
+                if '--' not in local_part and '--' not in email.split('@')[1]:
+                    return True
     return False
 
 def format_emails_from_input():
